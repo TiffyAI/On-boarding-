@@ -1,0 +1,297 @@
+<!-- Wallet Connect & TiffyAI Network Setup Panel -->
+<div style="text-align: center; margin: 40px 0;">
+  <div style="display: inline-block; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); padding: 25px; border-radius: 15px; border: 1px solid #4af0f8; box-shadow: 0 0 15px #4af0f8;">
+    
+    <!-- Connect Wallet Button -->
+    <button id="connectWalletBtn" 
+      style="padding: 12px 25px; margin-bottom: 15px; background: linear-gradient(90deg, #9055ff, #4af0f8); border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 16px; cursor: pointer;">
+      Connect Wallet
+    </button>
+    
+    <!-- Add BNB Testnet Button -->
+    <button id="addTestnetBtn" 
+      style="padding: 12px 25px; margin-bottom: 15px; background: linear-gradient(90deg, #4af0f8, #9055ff); border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 16px; cursor: pointer;">
+      Add BNB Testnet
+    </button>
+
+    <!-- Import Token Button -->
+    <button id="importTokenBtn" 
+      style="padding: 12px 25px; margin-bottom: 15px; background: linear-gradient(90deg, #00ffc3, #9055ff); border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 16px; cursor: pointer;">
+      Show My TiffyAI Token
+    </button>
+
+    <!-- Install MetaMask Button -->
+    <button id="installMetaMaskBtn" 
+      style="display:none; padding: 12px 25px; background: linear-gradient(90deg, #ff4aa2, #9055ff); border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 16px; cursor: pointer;">
+      Activate or Install MetaMask
+    </button>
+
+    <!-- Wallet Address Display -->
+    <div id="walletAddress" style="margin-top: 10px; color: #4af0f8; font-family: monospace;"></div>
+  </div>
+</div>
+
+<!-- Tiffy Walkthrough Button -->
+<div id="tiffyHelper" style="
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 9999;
+  background: linear-gradient(145deg, #9055ff, #4af0f8);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 50px;
+  box-shadow: 0 0 15px #4af0f8;
+  font-weight: bold;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;">
+  Need Help? (Tiffy)
+</div>
+
+<!-- Walkthrough Modal -->
+<div id="tiffyModal" style="
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+  width: 90%;
+  max-width: 400px;
+  background: rgba(12, 12, 12, 0.95);
+  border: 1px solid #4af0f8;
+  border-radius: 15px;
+  box-shadow: 0 0 20px #9055ff;
+  padding: 25px;
+  color: #fff;
+  text-align: center;
+  font-family: 'Segoe UI', sans-serif;
+">
+  <div id="step1">
+    <h2 style="color: #4af0f8;">Step 1: Install MetaMask</h2>
+    <p id="metaMaskStatus">Checking your browser...</p>
+    <button onclick="openMetaMaskInstall()" style="
+      padding: 10px 20px;
+      background: linear-gradient(90deg, #ff4aa2, #9055ff);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 15px;
+    ">
+      Install MetaMask
+    </button>
+    <br><br>
+    <button onclick="goToStep2()" style="
+      padding: 8px 15px;
+      background: #4af0f8;
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    ">Next: Connect Wallet</button>
+  </div>
+
+  <div id="step2" style="display: none;">
+    <h2 style="color: #4af0f8;">Step 2: Connect Your Wallet</h2>
+    <p id="connectStatus">Checking wallet connection...</p>
+    <button onclick="connectWalletFromModal()" style="
+      padding: 10px 20px;
+      background: linear-gradient(90deg, #9055ff, #4af0f8);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 15px;
+    ">
+      Connect Wallet
+    </button>
+    <br><br>
+    <button onclick="closeTiffyModal()" style="
+      background: none;
+      border: none;
+      color: #4af0f8;
+      text-decoration: underline;
+      cursor: pointer;
+    ">Close</button>
+  </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+  const connectBtn = document.getElementById('connectWalletBtn');
+  const addTestnetBtn = document.getElementById('addTestnetBtn');
+  const importTokenBtn = document.getElementById('importTokenBtn');
+  const installMetaMaskBtn = document.getElementById('installMetaMaskBtn');
+  const walletAddressDisplay = document.getElementById('walletAddress');
+  const tiffyHelper = document.getElementById('tiffyHelper');
+  const tiffyModal = document.getElementById('tiffyModal');
+  const metaMaskStatus = document.getElementById('metaMaskStatus');
+
+  const tiffyToken = {
+    address: '0x6df97Ec32401e23dEDB2E6cAF3035155890DC237',
+    symbol: 'TIFFY',
+    decimals: 18,
+    image: 'https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png'
+  };
+
+  function isMobile() {
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  }
+
+  function openMetaMaskInstall() {
+    const link = isMobile()
+      ? 'https://metamask.app.link/dapp/tiffyai.github.io/On-boarding-/'
+      : 'https://metamask.io/download/';
+    window.open(link, '_blank');
+  }
+
+  async function connectWallet() {
+    if (typeof window.ethereum === 'undefined') {
+      installMetaMaskBtn.style.display = 'inline-block';
+      return;
+    }
+
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const account = accounts[0];
+      walletAddressDisplay.innerText = 'Connected: ' + account.slice(0, 6) + '...' + account.slice(-4);
+    } catch (err) {
+      alert('Failed to connect wallet: ' + (err.message || err));
+    }
+  }
+
+  async function addBNBTestnet() {
+    if (typeof window.ethereum === 'undefined') {
+      installMetaMaskBtn.style.display = 'inline-block';
+      return;
+    }
+
+    try {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: '0x61',
+          chainName: 'BNB Smart Chain Testnet',
+          nativeCurrency: {
+            name: 'BNB',
+            symbol: 'tBNB',
+            decimals: 18
+          },
+          rpcUrls: ['https://bsc-testnet.publicnode.com'],
+          blockExplorerUrls: ['https://testnet.bscscan.com']
+        }]
+      });
+      alert('BNB Testnet added successfully!');
+    } catch (err) {
+      alert('Error adding BNB Testnet: ' + (err.message || err));
+    }
+  }
+
+  async function importTiffyToken() {
+    if (!window.ethereum) {
+      alert('MetaMask is not installed');
+      return;
+    }
+
+    try {
+      const wasAdded = await window.ethereum.request({
+        method: 'wallet_watchAsset',
+        params: {
+          type: 'ERC20',
+          options: {
+            address: tiffyToken.address,
+            symbol: tiffyToken.symbol,
+            decimals: tiffyToken.decimals,
+            image: tiffyToken.image
+          }
+        }
+      });
+
+      if (wasAdded) {
+        alert('TiffyAI token added to your wallet!');
+      } else {
+        alert('TiffyAI token was not added.');
+      }
+    } catch (err) {
+      alert('Error adding token: ' + (err.message || err));
+    }
+  }
+
+  function goToStep2() {
+    document.getElementById('step1').style.display = 'none';
+    document.getElementById('step2').style.display = 'block';
+
+    setTimeout(() => {
+      if (typeof window.ethereum !== 'undefined') {
+        document.getElementById('connectStatus').innerText = 'Wallet detected. Click below to connect.';
+      } else {
+        document.getElementById('connectStatus').innerText = 'MetaMask is not available.';
+      }
+    }, 300);
+  }
+
+  async function connectWalletFromModal() {
+    if (typeof window.ethereum === 'undefined') {
+      alert("MetaMask is not installed.");
+      return;
+    }
+
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const account = accounts[0];
+      document.getElementById('connectStatus').innerText = 'Connected: ' + account.slice(0, 6) + '...' + account.slice(-4);
+    } catch (err) {
+      document.getElementById('connectStatus').innerText = 'Connection failed: ' + (err.message || err);
+    }
+  }
+
+  function closeTiffyModal() {
+    tiffyModal.style.display = 'none';
+  }
+
+    tiffyHelper.onclick = () => {
+    tiffyModal.style.display = 'block';
+    metaMaskStatus.innerText = 'Checking your browser...';
+
+    setTimeout(() => {
+      if (typeof window.ethereum !== 'undefined') {
+        metaMaskStatus.innerText = 'MetaMask is installed!';
+      } else {
+        metaMaskStatus.innerText = 'MetaMask not found. You can install it below.';
+      }
+    }, 500);
+  };
+
+  // Retry logic for mobile MetaMask injection delay
+  window.addEventListener('load', () => {
+    let retries = 0;
+
+    function checkEthereum() {
+      if (typeof window.ethereum !== 'undefined') {
+        connectBtn.style.display = 'inline-block';
+        addTestnetBtn.style.display = 'inline-block';
+        importTokenBtn.style.display = 'inline-block';
+        installMetaMaskBtn.style.display = 'none';
+      } else {
+        retries++;
+        if (retries < 10) {
+          setTimeout(checkEthereum, 200);
+        } else {
+          installMetaMaskBtn.style.display = 'inline-block';
+        }
+      }
+    }
+
+    checkEthereum();
+  });
+
+  connectBtn.onclick = connectWallet;
+  addTestnetBtn.onclick = addBNBTestnet;
+  importTokenBtn.onclick = importTiffyToken;
+  installMetaMaskBtn.onclick = openMetaMaskInstall;
+</script>
