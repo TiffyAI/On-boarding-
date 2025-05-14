@@ -17,13 +17,13 @@
     <!-- Import Token Button -->
     <button id="importTokenBtn" 
       style="padding: 12px 25px; margin-bottom: 15px; background: linear-gradient(90deg, #00ffc3, #9055ff); border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 16px; cursor: pointer;">
-      Show My TiffyAI Token
+      Load & Show My TiffyAI Token
     </button>
 
     <!-- Install MetaMask Button (hidden by default) -->
     <button id="installMetaMaskBtn" 
       style="display:none; padding: 12px 25px; background: linear-gradient(90deg, #ff4aa2, #9055ff); border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 16px; cursor: pointer;">
-      Install MetaMask
+      Activate or Install MetaMask
     </button>
 
     <!-- Wallet Address Display -->
@@ -82,14 +82,14 @@
       await window.ethereum.request({
         method: 'wallet_addEthereumChain',
         params: [{
-          chainId: '0x61',
+          chainId: '0x61', // 97
           chainName: 'BNB Smart Chain Testnet',
           nativeCurrency: {
             name: 'BNB',
-            symbol: 'BNB',
+            symbol: 'tBNB',
             decimals: 18
           },
-          rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
+          rpcUrls: ['https://bsc-testnet.publicnode.com'],
           blockExplorerUrls: ['https://testnet.bscscan.com']
         }]
       });
@@ -143,4 +143,3 @@
     }
   });
 </script>
-
