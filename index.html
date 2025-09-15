@@ -22,30 +22,37 @@
     a.sourcify{display:block;color:#0ff;text-decoration:none;margin-top:15px;font-size:14px}
     a.sourcify:hover{text-decoration:underline}
 
-    /* New styles for the wallet display */
-    .wallet-display {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 20px;
-      margin-top: 20px;
+    /* New styles for the wallet display below the buttons */
+    .wallet-info {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        gap: 15px;
+        margin-top: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid rgba(74, 240, 248, 0.5);
     }
-
-    .balance-info, .price-info {
-      text-align: center;
+    .wallet-info .balance-group, .wallet-info .price-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
-
-    .balance-info .balance, .price-info .usd-value {
-      font-size: 1.2em;
-      font-weight: bold;
-      color: #00ffc3;
+    .wallet-info img {
+        height: 40px;
+        width: 40px;
+        margin-bottom: 5px;
     }
-
-    .price-info .live-price {
-      font-size: 1em;
-      color: #ffcc00;
+    .wallet-info .balance-text, .wallet-info .price-text {
+        font-size: 1.1em;
+        font-weight: bold;
     }
-
+    .wallet-info .usd-value {
+        color: #ffcc00;
+        font-size: 1em;
+    }
+    
     /* Modal styles from index (1).html */
     #feeModal {
       position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -70,22 +77,24 @@
   <div id="mainPortal">
     <div class="card">
       <div><strong>💼 Connected:</strong> <span id="walletAddress"></span></div>
-      
-      <div class="wallet-display">
-        <div class="balance-info">
-          <img src="https://tiffyai.github.io/Blue-Key-Claim/TiffyAI-Token.png" alt="TIFFY"/>
-          <strong class="balance" id="tiffyCount">0 TIFFY</strong>
-        </div>
-        <div class="price-info">
-          <p>Price: $<span id="livePrice">–</span></p>
-          <p>Value: $<span id="usdValue">0.00</span></p>
-        </div>
-      </div>
 
-      <a href="https://repo.sourcify.dev/56/0xE488253DD6B4D31431142F1b7601C96f24Fb7dd5" target="_blank" class="sourcify">🧪 Verified on Sourcify</a>
+            <a href="https://repo.sourcify.dev/56/0xE488253DD6B4D31431142F1b7601C96f24Fb7dd5" target="_blank" class="sourcify">🧪 Verified on Sourcify</a>
+
       <button class="btn withdraw" id="withdrawBtn" style="display:none">Withdraw My TIFFY</button>
       <button class="btn claim" id="claimBtn" style="display:none">Claim 1 TIFFY</button>
       <div id="cooldownTimer" style="margin-top:12px;font-size:18px;text-shadow:0 0 10px #0ff,0 0 20px #f0f;font-weight:bold;"></div>
+
+      <div class="wallet-info">
+        <div class="balance-group">
+          <img src="https://tiffyai.github.io/Blue-Key-Claim/TiffyAI-Token.png" alt="TIFFY"/>
+          <strong class="balance-text" id="tiffyCount">0 TIFFY</strong>
+        </div>
+        <div class="price-group">
+          <span class="price-text">Price: $<span id="livePrice">–</span></span>
+          <span class="usd-value" id="usdValue">USD: $0.00</span>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -237,7 +246,7 @@
     function updateDisplay(cnt){
       E.count.textContent = `${cnt} TIFFY`;
       const price = parseFloat(E.live.textContent || 0);
-      E.usd.textContent = (cnt * price).toFixed(2);
+      E.usd.textContent = `USD: $${(cnt * price).toFixed(2)}`;
       if (contract && account) {
         contract.methods.lastClaimed(account).call().then(last => {
           const now = Math.floor(Date.now() / 1000);
