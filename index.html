@@ -121,7 +121,7 @@
   <!-- Wallet Setup Panel -->
   <div class="wallet-panel">
     <button id="connectWalletBtn">Connect Wallet</button>
-    <button id="addTestnetBtn">Add BNB Testnet</button>
+    <button id="addTestnetBtn">Add BNB Mainnet</button>
     <button id="importTokenBtn">Show My TiffyAI Token</button>
     <button id="installMetaMaskBtn" style="display:none;">Activate or Install MetaMask</button>
     <div id="walletAddress"></div>
@@ -189,20 +189,20 @@
         await window.ethereum.request({
           method: 'wallet_addEthereumChain',
           params: [{
-            chainId: '0x61',
-            chainName: 'BNB Smart Chain Testnet',
+            chainId: '0x38',
+            chainName: 'BNB Smart Chain',
             nativeCurrency: {
               name: 'BNB',
-              symbol: 'tBNB',
+              symbol: 'BNB',
               decimals: 18
             },
-            rpcUrls: ['https://bsc-testnet.publicnode.com'],
-            blockExplorerUrls: ['https://testnet.bscscan.com']
+            rpcUrls: ['https://bsc-dataseed.binance.org'],
+            blockExplorerUrls: ['https://bscscan.com']
           }]
         });
-        alert('BNB Testnet added successfully!');
+        alert('BNB Mainnet added successfully!');
       } catch (err) {
-        alert('Error adding BNB Testnet: ' + (err.message || err));
+        alert('Error adding BNB Mainnet: ' + (err.message || err));
       }
     }
 
