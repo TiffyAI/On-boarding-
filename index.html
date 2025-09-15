@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TiffyAI Wallet Setup</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: url('Onboard.jpg') no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .wallet-panel {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 15px;
+      border: 1px solid #4af0f8;
+      box-shadow: 0 0 15px #4af0f8;
+      text-align: center;
+    }
+
+    .wallet-panel button {
+      padding: 12px 25px;
+      margin-bottom: 15px;
+      border: none;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      color: white;
+      display: block;
+      width: 100%;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+      transition: transform 0.2s ease-in-out;
+    }
+
+    .wallet-panel button:active {
+      transform: scale(0.95);
+    }
+
+    #connectWalletBtn {
+      background: linear-gradient(90deg, #9055ff, #4af0f8);
+    }
+
+    #addMainnetBtn {
+      background: linear-gradient(90deg, #4af0f8, #9055ff);
+    }
+
+    #importTokenBtn {
+      background: linear-gradient(90deg, #00ffc3, #9055ff);
+    }
+
+    #installMetaMaskBtn {
+      background: linear-gradient(90deg, #ff4aa2, #9055ff);
+    }
+
+    #walletAddress {
+      margin-top: 10px;
+      color: #4af0f8;
+      font-family: monospace;
+      word-break: break-all;
+    }
+
+    /* --- Tiffy Assistant --- */
+    #tiffyAssistant {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 120px;
+      z-index: 999;
+      animation: pulse 2.5s infinite;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    #tiffyAssistant img {
+      width: 100%;
+      border-radius: 50%;
+      box-shadow: 0 0 20px #4af0f8;
+    }
+
+    #tiffySpeech {
+      position: absolute;
+      bottom: 140px;
+      right: 10px;
+      background: rgba(12, 12, 12, 0.95);
+      border: 1px solid #4af0f8;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      max-width: 240px;
+      display: none;
+      box-shadow: 0 0 10px #9055ff;
+    }
+
+    #tiffySpeech button {
+      margin: 8px 4px 0;
+      padding: 6px 14px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #9055ff, #4af0f8);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 15px #9055ff;
+      }
+
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 25px #4af0f8;
+      }
+
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 15px #9055ff;
+      }
+    }
+
+    /* Custom message box for alerts */
+    .message-box {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.85);
+        padding: 1.5rem;
+        border-radius: 1rem;
+        text-align: center;
+        z-index: 1000;
+        backdrop-filter: blur(8px);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        color: #fff;
+      }
+
+    .message-box.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+    /* PATCH: balance row styling (bottom of panel) */
+    #balanceSection { margin-top: 14px; }
+    .balance-row {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      margin-top:12px;
+      color:#fff;
+      font-weight:600;
+    }
+    .balance-row img { height:28px; width:28px; border-radius:6px; box-shadow:0 0 10px rgba(0,255,255,0.08); }
+    .balance-row .usd { color:#00ffc3; font-weight:700; margin-left:6px; }
+  </style>
+</head>
+<body>
+
+  <!-- Wallet Setup Panel -->
+  <div class="wallet-panel">
+    <button id="connectWalletBtn">Connect Wallet</button>
+    <button id="addMainnetBtn">Add BNB Mainnet</button>
+    <button id="importTokenBtn">Show My TiffyAI Token</button>
+    <button id="installMetaMaskBtn" style="display:none;">Activate or Install MetaMask</button>
+    <div id="walletAddress"></div>
+
+    <!-- PATCH: added dedicated balance section (bottom location) -->
+    <div id="balanceSection"></div>
+  </div>
+
+  <!-- Tiffy Mascot -->
+  <a id="tiffyAssistant" href="https://tiffyai.github.io/Dream-Menu/" target="_blank">
+    <img src="https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png" alt="Tiffy Assistant" />
+    <div id="tiffySpeech">
+      <p id="tiffyText">Hey, need help setting up your wallet?</p>
+      <div id="tiffyOptions">
+        <button onclick="tiffyReplyYes()">Yes, help me</button>
+        <button onclick="tiffyReplyNo()">No, I’m good</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Custom message box for alerts -->
+  <div id="messageBox" class="message-box">
+    <p id="messageText"></p>
+  </div>
+
+  <script>
+    // -----------------------
+    // State & UI refs
+    // -----------------------
+    const connectBtn = document.getElementById('connectWalletBtn');
+    const addMainnetBtn = document.getElementById('addMainnetBtn');
+    const importTokenBtn = document.getElementById('importTokenBtn');
+    const installMetaMaskBtn = document.getElementById('installMetaMaskBtn');
+    const walletAddressDisplay = document.getElementById('walletAddress');
+    const messageBox = document.getElementById('messageBox');
+    const messageText = document.getElementById('messageText');
+    const balanceSection = document.getElementById('balanceSection');
+
+    // token metadata
+    const tiffyToken = {
+      address: '0xE488253DD6B4D31431142F1b7601C96f24Fb7dd5',
+      symbol: 'TIFFY',
+      decimals: 18,
+      image: 'https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png'
+    };
+
+    // ABI for a basic ERC20 token to get balance
+    const tiffyTokenABI = [
+      "function balanceOf(address owner) view returns (uint256)"
+    ];
+
+    // Price JSON path (your system)
+    const PRICE_JSON_PATH = "/TIFFY-Market-Value/price.json";
+
+    // runtime state
+    let refreshIntervalId = null;
+    let currentAccount = null;
+
+    // -----------------------
+    // Helpers
+    // -----------------------
+    function showMessage(text, ms = 4000) {
+      // allow multi-line messages (new lines allowed)
+      messageText.textContent = text;
+      messageBox.classList.add('show');
+      setTimeout(() => {
+        messageBox.classList.remove('show');
+      }, ms);
+    }
+
+    function isMobile() {
+      return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    }
+
+    function openMetaMaskInstall() {
+      const link = isMobile()
+        ? 'https://metamask.app.link/dapp/tiffyai.github.io/On-boarding-/'
+        : 'https://metamask.io/download/';
+      window.open(link, '_blank');
+    }
+
+    // -----------------------
+    // PATCH: switch/add BSC helper
+    // -----------------------
+    async function switchToBSC() {
+      if (!window.ethereum) throw new Error('No injected provider');
+      try {
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }]});
+        return true;
+      } catch (err) {
+        // 4902 -> chain not present
+        if (err && (err.code === 4902 || /Unrecognized chain ID/i.test(err.message || ''))) {
+          // try to add BSC
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x38',
+              chainName: 'BNB Smart Chain',
+              nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+              rpcUrls: ['https://bsc-dataseed.binance.org'],
+              blockExplorerUrls: ['https://bscscan.com']
+            }]
+          });
+          // attempt switch again (some wallets auto-switch)
+          try { await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }]}); } catch(e){}
+          return true;
+        }
+        throw err;
+      }
+    }
+
+    // -----------------------
+    // connect wallet
+    // -----------------------
+    async function connectWallet() {
+      if (typeof window.ethereum === 'undefined') {
+        installMetaMaskBtn.style.display = 'inline-block';
+        showMessage('Please install MetaMask or use a Web3-enabled browser.');
+        return;
+      }
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (!accounts || accounts.length === 0) {
+          showMessage('No accounts found.');
+          return;
+        }
+        currentAccount = accounts[0];
+        walletAddressDisplay.innerText = 'Connected: ' + currentAccount.slice(0, 6) + '...' + currentAccount.slice(-4);
+        showMessage('Wallet connected');
+
+        // immediate balance fetch and periodic refresh (PATCH)
+        await displayBalance();
+        if (refreshIntervalId) clearInterval(refreshIntervalId);
+        refreshIntervalId = setInterval(displayBalance, 60000);
+      } catch (err) {
+        showMessage('Failed to connect wallet: ' + (err && err.message ? err.message : err));
+        console.error('connectWallet err', err);
+      }
+    }
+
+    // -----------------------
+    // Add BNB Mainnet (button)
+    // -----------------------
+    async function addBNBMainnet() {
+      if (!window.ethereum) {
+        installMetaMaskBtn.style.display = 'inline-block';
+        return;
+      }
+      try {
+        await switchToBSC();
+        showMessage('BNB Smart Chain active or added successfully!');
+      } catch (err) {
+        showMessage('Error adding BNB Mainnet: ' + (err && err.message ? err.message : err));
+      }
+    }
+
+    // -----------------------
+    // PATCH: import token (switch to BSC first, attempt wallet_watchAsset, then always fetch balance)
+    // -----------------------
+    async function importTiffyToken() {
+      if (!window.ethereum) {
+        showMessage('MetaMask is not installed');
+        return;
+      }
+
+      try {
+        // Try to ensure chain is BSC to avoid silent import issues
+        try {
+          await switchToBSC();
+        } catch (chainErr) {
+          // If user refused switch, we'll proceed but warn
+          console.warn('chain switch failed or refused', chainErr);
+          showMessage('Please switch to BSC (BNB) in your wallet to import token, or accept manual add.');
+        }
+
+        // Not all wallets support wallet_watchAsset — wrap in try/catch
+        let wasAdded = false;
+        try {
+          wasAdded = await window.ethereum.request({
+            method: 'wallet_watchAsset',
+            params: {
+              type: 'ERC20',
+              options: {
+                address: tiffyToken.address,
+                symbol: tiffyToken.symbol,
+                decimals: tiffyToken.decimals,
+                image: tiffyToken.image
+              }
+            }
+          });
+        } catch (watchErr) {
+          console.warn('wallet_watchAsset thrown error or unsupported', watchErr);
+          wasAdded = false;
+        }
+
+        if (wasAdded) {
+          showMessage('✅ TiffyAI token added to your wallet!');
+        } else {
+          // user cancelled or wallet doesn't support auto-add
+          showMessage('Token import cancelled or not supported by this wallet. Showing on-chain balance below.');
+        }
+
+        // Always refresh balance on-chain to verify real holdings
+        await displayBalance();
+
+        // If not added, show manual instructions for 7s
+        if (!wasAdded) {
+          const manual = `If the token doesn't appear in your wallet, add it manually:\nAddress: ${tiffyToken.address}\nSymbol: ${tiffyToken.symbol}\nDecimals: ${tiffyToken.decimals}`;
+          showMessage(manual, 7000);
+        }
+      } catch (err) {
+        console.error('importTiffyToken error', err);
+        showMessage('Error adding token: ' + (err && err.message ? err.message : err));
+      }
+    }
+
+    // -----------------------
+    // PATCH: displayBalance — show at bottom and get USD using your price.json
+    // -----------------------
+    async function displayBalance() {
+      // Remove balance if provider missing
+      if (!window.ethereum) {
+        balanceSection.innerHTML = '';
+        return;
+      }
+
+      try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        // get accounts without forcing a popup
+        const accounts = await provider.listAccounts();
+        const account = (accounts && accounts.length) ? accounts[0] : currentAccount;
+        if (!account) {
+          balanceSection.innerHTML = '';
+          return;
+        }
+        currentAccount = account;
+        walletAddressDisplay.innerText = 'Connected: ' + account.slice(0,6) + '...' + account.slice(-4);
+
+        // query ERC20 balance
+        const tokenContract = new ethers.Contract(tiffyToken.address, tiffyTokenABI, provider);
+        let rawBalance = '0';
+        try {
+          rawBalance = await tokenContract.balanceOf(account);
+        } catch (balErr) {
+          console.warn('balanceOf failed', balErr);
+          rawBalance = '0';
+        }
+
+        // format balance
+        let formattedBalance = '0';
+        try {
+          const asNumber = parseFloat(ethers.utils.formatUnits(rawBalance, tiffyToken.decimals));
+          if (isNaN(asNumber)) {
+            formattedBalance = '0';
+          } else {
+            // choose precision: if tiny, show scientific up to 6 sig figs, else up to 6 decimals trim zeros
+            if (Math.abs(asNumber) < 0.000001) formattedBalance = asNumber.toPrecision(6).replace(/\.?0+$/, '');
+            else formattedBalance = asNumber.toFixed(6).replace(/\.?0+$/, '');
+          }
+        } catch (e) {
+          formattedBalance = '0';
+        }
+
+        // fetch price JSON
+        let usdPrice = 0;
+        try {
+          const r = await fetch(PRICE_JSON_PATH, { cache: 'no-store' });
+          if (r.ok) {
+            const d = await r.json();
+            usdPrice = parseFloat(d.tiffyToUSD ?? d.price ?? d.tiffy ?? 0) || 0;
+          } else {
+            console.warn('Price JSON fetch returned status', r.status);
+          }
+        } catch (priceErr) {
+          console.warn('Price fetch failed', priceErr);
+        }
+
+        const totalUSD = (parseFloat(formattedBalance) * (usdPrice || 0));
+        const usdDisplay = isFinite(totalUSD) ? totalUSD.toFixed(2) : '0.00';
+
+        // render to bottom section
+        balanceSection.innerHTML = `
+          <div class="balance-row" id="tiffyBalanceRow">
+            <img src="${tiffyToken.image}" alt="${tiffyToken.symbol}" />
+            <div class="amount">${formattedBalance} ${tiffyToken.symbol}</div>
+            <div class="usd">→ $${usdDisplay} USD</div>
+          </div>
+        `;
+      } catch (err) {
+        console.error('displayBalance error', err);
+        // don't spam user; clear UI
+        balanceSection.innerHTML = '';
+      }
+    }
+
+    // -----------------------
+    // Hook events and buttons
+    // -----------------------
+    connectBtn.onclick = connectWallet;
+    addMainnetBtn.onclick = addBNBMainnet;
+    importTokenBtn.onclick = importTiffyToken;
+    installMetaMaskBtn.onclick = openMetaMaskInstall;
+
+    // -----------------------
+    // Provider detection and listeners
+    // -----------------------
+    window.addEventListener('load', () => {
+      let retries = 0;
+      function checkEthereum() {
+        if (typeof window.ethereum !== 'undefined') {
+          connectBtn.style.display = 'inline-block';
+          addMainnetBtn.style.display = 'inline-block';
+          importTokenBtn.style.display = 'inline-block';
+          installMetaMaskBtn.style.display = 'none';
+
+          // attach listeners safely
+          try {
+            window.ethereum.on && window.ethereum.on('accountsChanged', (accounts) => {
+              if (!accounts || accounts.length === 0) {
+                currentAccount = null;
+                walletAddressDisplay.innerText = '';
+                balanceSection.innerHTML = '';
+                if (refreshIntervalId) { clearInterval(refreshIntervalId); refreshIntervalId = null; }
+              } else {
+                currentAccount = accounts[0];
+                walletAddressDisplay.innerText = 'Connected: ' + currentAccount.slice(0,6) + '...' + currentAccount.slice(-4);
+                displayBalance();
+                if (!refreshIntervalId) refreshIntervalId = setInterval(displayBalance, 60000);
+              }
+            });
+
+            window.ethereum.on && window.ethereum.on('chainChanged', (chainId) => {
+              // small delay then refresh balances
+              setTimeout(() => { displayBalance(); }, 300);
+            });
+          } catch (e) {
+            console.warn('Could not attach ethereum listeners', e);
+          }
+
+        } else {
+          retries++;
+          if (retries < 10) {
+            setTimeout(checkEthereum, 200);
+          } else {
+            installMetaMaskBtn.style.display = 'inline-block';
+          }
+        }
+      }
+      checkEthereum();
+    });
+
+    // -----------------------
+    // Tiffy speech helpers (unchanged)
+    // -----------------------
+    function toggleSpeech() {
+      const bubble = document.getElementById('tiffySpeech');
+      bubble.style.display = bubble.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function tiffyReplyYes() {
+      document.getElementById('tiffyText').innerText = "Awesome! First, tap 'Connect Wallet' above.";
+      document.getElementById('tiffyOptions').style.display = 'none';
+      document.querySelector('.wallet-panel').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function tiffyReplyNo() {
+      document.getElementById('tiffyText').innerText = "Alright! If you need me, just tap again.";
+      document.getElementById('tiffyOptions').style.display = 'none';
+    }
+
+    // ensure cleanup on unload
+    window.addEventListener('beforeunload', () => {
+      if (refreshIntervalId) clearInterval(refreshIntervalId);
+    });
+  </script>
+
+</body>
+</html>
