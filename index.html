@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TiffyAI Wallet Setup</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -200,6 +201,11 @@
       decimals: 18,
       image: 'https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png'
     };
+    
+    // ABI for a basic ERC20 token to get balance
+    const tiffyTokenABI = [
+      "function balanceOf(address owner) view returns (uint256)"
+    ];
 
     function showMessage(text) {
       messageText.textContent = text;
@@ -284,11 +290,45 @@
 
         if (wasAdded) {
           showMessage('TiffyAI token added to your wallet!');
+          await displayBalance();
         } else {
-          showMessage('TiffyAI token was not added.');
+          showMessage('TiffyAI token was not added. Please accept in your wallet to proceed.');
         }
       } catch (err) {
         showMessage('Error adding token: ' + (err.message || err));
+      }
+    }
+
+    async function displayBalance() {
+      if (!window.ethereum) {
+        return;
+      }
+      
+      try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const account = await signer.getAddress();
+        const tokenContract = new ethers.Contract(tiffyToken.address, tiffyTokenABI, provider);
+        
+        const balance = await tokenContract.balanceOf(account);
+        const formattedBalance = ethers.utils.formatUnits(balance, tiffyToken.decimals);
+        
+        const balanceDisplay = document.createElement('div');
+        balanceDisplay.id = 'tokenBalance';
+        balanceDisplay.style.color = '#fff';
+        balanceDisplay.style.marginTop = '15px';
+        balanceDisplay.innerHTML = `<p>Your **${tiffyToken.symbol}** Balance:</p>
+                                    <p style="font-size: 1.2em; color: #00ffc3;">${formattedBalance}</p>`;
+
+        const existingBalance = document.getElementById('tokenBalance');
+        if (existingBalance) {
+          existingBalance.remove();
+        }
+        document.querySelector('.wallet-panel').appendChild(balanceDisplay);
+        
+      } catch (err) {
+        console.error('Error fetching balance:', err);
+        showMessage('Failed to fetch token balance. Please check your wallet connection.');
       }
     }
 
