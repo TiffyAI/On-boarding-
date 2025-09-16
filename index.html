@@ -70,11 +70,11 @@
       word-break: break-all;
     }
 
-    /* --- Token info box --- */
     #tokenInfo {
       margin-top: 20px;
       color: #fff;
       text-align: center;
+      display: none;
     }
 
     #tokenInfo img {
@@ -96,19 +96,13 @@
       font-weight: bold;
     }
 
-    #tokenInfo .price {
-      font-size: 1em;
-      color: #ffcc00;
-      font-weight: bold;
-    }
-
     #tokenInfo .usd {
       font-size: 1em;
       color: #ffcc00;
       font-weight: bold;
     }
 
-    /* --- Tiffy Assistant --- */
+    /* Tiffy Assistant */
     #tiffyAssistant {
       position: fixed;
       bottom: 20px;
@@ -159,7 +153,6 @@
       100% { transform: scale(1); box-shadow: 0 0 15px #9055ff; }
     }
 
-    /* Custom message box for alerts */
     .message-box {
       position: fixed;
       top: 50%;
@@ -185,15 +178,13 @@
 </head>
 <body>
 
-  <!-- Wallet Setup Panel -->
   <div class="wallet-panel">
     <button id="connectWalletBtn">Connect Wallet</button>
     <button id="importTokenBtn">Show My TiffyAI Token</button>
     <button id="installMetaMaskBtn" style="display:none;">Activate or Install MetaMask</button>
     <div id="walletAddress"></div>
 
-    <!-- Token Info Section -->
-    <div id="tokenInfo" style="display:none;">
+    <div id="tokenInfo">
       <img src="https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png" alt="TIFFY Token" />
       <p class="balance">Balance: 0 TIFFY</p>
       <p class="price">Price: $0</p>
@@ -201,7 +192,6 @@
     </div>
   </div>
 
-  <!-- Tiffy Mascot -->
   <a id="tiffyAssistant" href="https://tiffyai.github.io/Dream-Menu/" target="_blank">
     <img src="https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png" alt="Tiffy Assistant" />
     <div id="tiffySpeech">
@@ -213,7 +203,6 @@
     </div>
   </a>
 
-  <!-- Custom message box for alerts -->
   <div id="messageBox" class="message-box">
     <p id="messageText"></p>
   </div>
@@ -238,31 +227,20 @@
       "function balanceOf(address owner) view returns (uint256)"
     ];
 
-    const PRICE_JSON_URL = "https://tiffyai.github.io/On-boarding-/price.json";
+    const PRICE_JSON_URL = "https://tiffyai.github.io/On-boarding-/price.json"; // ✅ your hosted logic
 
     function showMessage(text) {
       messageText.textContent = text;
       messageBox.classList.add('show');
-      setTimeout(() => {
-        messageBox.classList.remove('show');
-      }, 3000);
+      setTimeout(() => messageBox.classList.remove('show'), 3000);
     }
 
     async function ensureProviderAndAccount() {
-      if (!window.ethereum) {
-        throw new Error("MetaMask not installed");
-      }
+      if (!window.ethereum) throw new Error("MetaMask not installed");
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const accounts = await provider.send("eth_requestAccounts", []);
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No account connected");
-      }
+      if (!accounts || accounts.length === 0) throw new Error("No account connected");
       return { provider, account: accounts[0] };
-    }
-
-    async function getProviderNetworkChainId(provider) {
-      const network = await provider.getNetwork();
-      return network.chainId;
     }
 
     async function connectWallet() {
@@ -278,12 +256,8 @@
     async function importTiffyToken() {
       try {
         const { provider, account } = await ensureProviderAndAccount();
-        const chainId = await getProviderNetworkChainId(provider);
-
-        if (chainId !== 56) {
-          showMessage("Please switch to BNB Smart Chain first.");
-          return;
-        }
+        const chainId = (await provider.getNetwork()).chainId;
+        if (chainId !== 56) { showMessage("Please switch to BNB Smart Chain first."); return; }
 
         const wasAdded = await window.ethereum.request({
           method: "wallet_watchAsset",
@@ -298,15 +272,9 @@
           }
         });
 
-        if (wasAdded) {
-          showMessage("TiffyAI token added to your wallet!");
-          await updateTokenInfo();
-        } else {
-          showMessage("TiffyAI token not added. Please accept in your wallet.");
-        }
-      } catch (err) {
-        showMessage("Error adding token: " + (err.message || err));
-      }
+        if (wasAdded) { showMessage("TiffyAI token added to your wallet!"); await updateTokenInfo(); }
+        else showMessage("TiffyAI token not added. Please accept in your wallet.");
+      } catch (err) { showMessage("Error adding token: " + (err.message || err)); }
     }
 
     async function updateTokenInfo() {
@@ -316,8 +284,8 @@
         const balance = await tokenContract.balanceOf(account);
         const formattedBalance = ethers.utils.formatUnits(balance, tiffyToken.decimals);
 
-        // ✅ Fetch live price from your hosted JSON
-        const res = await fetch(PRICE_JSON_URL, {cache:'no-store'});
+        // --- YOUR CLAIM PAGE LOGIC ---
+        const res = await fetch(PRICE_JSON_URL, { cache: 'no-store' });
         const data = await res.json();
         const price = parseFloat(data.tiffyToUSD) || 0;
         const usdValue = (parseFloat(formattedBalance) * price).toFixed(2);
@@ -332,9 +300,33 @@
       }
     }
 
-    connectBtn.addEventListener("click", connectWallet);
-    importTokenBtn.addEventListener("click", importTiffyToken);
+    connectBtn.onclick = connectWallet;
+    importTokenBtn.onclick = importTiffyToken;
+    installMetaMaskBtn.onclick = () => {
+      const link = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+        ? 'https://metamask.app.link/dapp/tiffyai.github.io/On-boarding-/'
+        : 'https://metamask.io/download/';
+      window.open(link, "_blank");
+    };
 
+    window.addEventListener("load", () => {
+      if (window.ethereum) {
+        connectBtn.style.display = "inline-block";
+        importTokenBtn.style.display = "inline-block";
+        installMetaMaskBtn.style.display = "none";
+      } else installMetaMaskBtn.style.display = "inline-block";
+    });
+
+    function tiffyReplyYes() {
+      document.getElementById("tiffyText").innerText = "Awesome! First, tap 'Connect Wallet' above.";
+      document.getElementById("tiffyOptions").style.display = "none";
+      document.querySelector(".wallet-panel").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function tiffyReplyNo() {
+      document.getElementById("tiffyText").innerText = "Alright! If you need help later, just click me.";
+      document.getElementById("tiffyOptions").style.display = "none";
+    }
   </script>
 </body>
 </html>
