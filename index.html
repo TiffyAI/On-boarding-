@@ -239,8 +239,20 @@
       "function balanceOf(address owner) view returns (uint256)"
     ];
 
-    // Using your hosted JSON (same structure & property as your Claim page)
-    const PRICE_JSON_URL = "https://tiffyai.github.io/On-boarding-/price.json";
+    // Candidate URLs to try (includes your known working hostnames + fallbacks)
+    const PRICE_CANDIDATES = [
+      "https://tiffyai.github.io/On-boarding-/price.json",
+      "https://tiffyai.github.io/TIFFY-Market-Value/price.json",
+      "https://tiffyai.github.io/TIFFY-Market-Value/price.json?raw=true",
+      "https://tiffyai.github.io/On-boarding-/price.json?raw=true",
+      // relative fallbacks (if you host alongside the page)
+      "./price.json",
+      "/TIFFY-Market-Value/price.json",
+      "/On-boarding-/price.json",
+      // raw github (may fail CORS; still trying)
+      "https://raw.githubusercontent.com/tiffyai/TIFFY-Market-Value/main/price.json",
+      "https://raw.githubusercontent.com/TiffyAI/TIFFY-Market-Value/main/price.json"
+    ];
 
     function showMessage(text) {
       messageText.textContent = text;
@@ -260,7 +272,7 @@
         throw new Error("No account connected");
       }
 
-      // Ensure user is on BNB Smart Chain (chainId 56). If not, request switch / add.
+      // Ensure BNB Smart Chain (chainId 56). If not, request switch / add.
       try {
         const network = await provider.getNetwork();
         if (network.chainId !== 56) {
@@ -270,7 +282,6 @@
               params: [{ chainId: "0x38" }]
             });
           } catch (switchError) {
-            // If chain is not added to wallet, add it (4902)
             if (switchError && switchError.code === 4902) {
               try {
                 await window.ethereum.request({
@@ -284,10 +295,11 @@
                   }]
                 });
               } catch (addErr) {
-                // ignore - user can add manually
+                console.warn("Add chain failed:", addErr);
               }
             } else {
-              // user refused to switch
+              // user refused or other error
+              console.warn("Switch chain error:", switchError);
             }
           }
         }
@@ -298,9 +310,119 @@
       return { provider, account: accounts[0] };
     }
 
-    async function getProviderNetworkChainId(provider) {
-      const network = await provider.getNetwork();
-      return network.chainId;
+    // Attempts every candidate URL in order and returns the first valid parsed price
+    async function fetchPriceFromCandidates() {
+      const attempts = [];
+      for (const url of PRICE_CANDIDATES) {
+        try {
+          const res = await fetch(url, { cache: 'no-store' });
+          attempts.push({ url, status: res.status, ok: res.ok });
+          if (!res.ok) {
+            console.warn(`Price fetch HTTP ${res.status} from ${url}`);
+            continue;
+          }
+          // try parse
+          let data;
+          try {
+            data = await res.json();
+          } catch (parseErr) {
+            attempts.push({ url, parseError: String(parseErr) });
+            console.warn("JSON parse error for", url, parseErr);
+            continue;
+          }
+          // try to extract price (check multiple shapes)
+          const found = extractPriceFromData(data);
+          if (found != null && !isNaN(found)) {
+            console.info("Price fetched from:", url, "price:", found);
+            return { price: found, url, raw: data };
+          } else {
+            attempts.push({ url, okParseNoPrice: true, data });
+            console.warn("No tiffy price found in JSON at", url, "keys:", Object.keys(data));
+            continue;
+          }
+        } catch (err) {
+          // network/CORS error etc
+          attempts.push({ url, error: String(err) });
+          console.warn("Fetch error for", url, err);
+          continue;
+        }
+      }
+      // if we reach here, no candidate produced price
+      console.error("All price attempts failed:", attempts);
+      const e = new Error("All price fetch attempts failed. See console for details.");
+      e.attempts = attempts;
+      throw e;
+    }
+
+    function extractPriceFromData(data) {
+      if (!data) return null;
+      // Check known keys (from your claim file): tiffyToUSD
+      const variants = ['tiffyToUSD','tiffyToUsd','tiffy_to_usd','price','tiffyPrice','tiffyUSD','priceUSD','usd'];
+      for (const k of variants) {
+        if (k in data) {
+          const n = parseFloat(data[k]);
+          if (!isNaN(n)) return n;
+        }
+      }
+      // nested under price
+      if (data.price && typeof data.price === 'object') {
+        for (const k of variants) {
+          if (k in data.price) {
+            const n = parseFloat(data.price[k]);
+            if (!isNaN(n)) return n;
+          }
+        }
+      }
+      // scan numeric-looking values
+      const vals = Object.values(data);
+      for (const val of vals) {
+        if (typeof val === 'number') return val;
+        if (typeof val === 'string') {
+          const n = parseFloat(val);
+          if (!isNaN(n)) return n;
+        } else if (typeof val === 'object' && val !== null) {
+          // shallow nested check
+          for (const v2 of Object.values(val)) {
+            const n = parseFloat(v2);
+            if (!isNaN(n)) return n;
+          }
+        }
+      }
+      return null;
+    }
+
+    async function updateTokenInfo() {
+      try {
+        const { provider, account } = await ensureProviderAndAccount();
+        const tokenContract = new ethers.Contract(tiffyToken.address, tiffyTokenABI, provider);
+        const balance = await tokenContract.balanceOf(account);
+        const formattedBalance = ethers.utils.formatUnits(balance, tiffyToken.decimals);
+
+        // Fetch price robustly using candidates
+        let price = 0;
+        try {
+          const result = await fetchPriceFromCandidates();
+          price = parseFloat(result.price) || 0;
+        } catch (err) {
+          console.warn("Price fetch failed (all candidates):", err);
+          // keep price = 0 as fallback
+        }
+
+        // compute USD and display
+        const numericBalance = parseFloat(formattedBalance) || 0;
+        const usdValue = numericBalance * price;
+        const usdText = isFinite(usdValue) ? usdValue.toFixed(2) : "0.00";
+        const priceText = isFinite(price) ? price.toFixed(6) : "0.000000";
+
+        tokenInfo.style.display = "block";
+        tokenInfo.querySelector(".balance").textContent = `Balance: ${formattedBalance} ${tiffyToken.symbol}`;
+        tokenInfo.querySelector(".price").textContent = `Price: $${priceText}`;
+        tokenInfo.querySelector(".usd").textContent = `USD Value: $${usdText}`;
+      } catch (err) {
+        console.error("Error updating token info:", err);
+        tokenInfo.style.display = "none";
+        showMessage("Failed to load token info.");
+      }
     }
 
     async function connectWallet() {
@@ -309,9 +431,8 @@
         walletAddressDisplay.innerText =
           "Connected: " + account.slice(0, 6) + "..." + account.slice(-4);
 
-        // fetch token info immediately and refresh periodically
+        // update immediately and set periodic refresh every 60s
         await updateTokenInfo().catch(()=>{});
-        // avoid duplicate intervals
         if (window._tiffyPriceInterval) clearInterval(window._tiffyPriceInterval);
         window._tiffyPriceInterval = setInterval(() => {
           updateTokenInfo().catch(()=>{});
@@ -324,7 +445,7 @@
     async function importTiffyToken() {
       try {
         const { provider, account } = await ensureProviderAndAccount();
-        const chainId = await getProviderNetworkChainId(provider);
+        const chainId = await provider.getNetwork().then(n => n.chainId).catch(() => null);
 
         if (chainId !== 56) {
           showMessage("Please switch to BNB Smart Chain first.");
@@ -352,41 +473,6 @@
         }
       } catch (err) {
         showMessage("Error adding token: " + (err.message || err));
-      }
-    }
-
-    async function updateTokenInfo() {
-      try {
-        const { provider, account } = await ensureProviderAndAccount();
-        const tokenContract = new ethers.Contract(tiffyToken.address, tiffyTokenABI, provider);
-        const balance = await tokenContract.balanceOf(account);
-        const formattedBalance = ethers.utils.formatUnits(balance, tiffyToken.decimals);
-
-        // === YOUR CLAIM PAGE price.json logic (used as-is) ===
-        let price = 0;
-        try {
-          const res = await fetch(PRICE_JSON_URL, { cache: 'no-store' });
-          if (!res.ok) throw new Error('Price fetch HTTP ' + res.status);
-          const data = await res.json();
-          // your JSON uses 'tiffyToUSD' in the claim page
-          price = parseFloat(data.tiffyToUSD) || 0;
-        } catch (err) {
-          console.warn("Price fetch failed:", err);
-          // if price fetch fails, keep price as 0 (display will show $0.00)
-        }
-
-        const usdValue = (parseFloat(formattedBalance || 0) * price);
-        const usdText = isNaN(usdValue) ? "0.00" : usdValue.toFixed(2);
-        const priceText = isNaN(price) ? "0.00" : price.toFixed(6);
-
-        tokenInfo.style.display = "block";
-        tokenInfo.querySelector(".balance").textContent = `Balance: ${formattedBalance} ${tiffyToken.symbol}`;
-        tokenInfo.querySelector(".price").textContent = `Price: $${priceText}`;
-        tokenInfo.querySelector(".usd").textContent = `USD Value: $${usdText}`;
-      } catch (err) {
-        console.error("Error updating token info:", err);
-        tokenInfo.style.display = "none";
-        showMessage("Failed to load token info.");
       }
     }
 
