@@ -70,6 +70,7 @@
       word-break: break-all;
     }
 
+    /* --- Token info box --- */
     #tokenInfo {
       margin-top: 20px;
       color: #fff;
@@ -96,13 +97,19 @@
       font-weight: bold;
     }
 
+    #tokenInfo .price {
+      font-size: 1em;
+      color: #ffcc00;
+      font-weight: bold;
+    }
+
     #tokenInfo .usd {
       font-size: 1em;
       color: #ffcc00;
       font-weight: bold;
     }
 
-    /* Tiffy Assistant */
+    /* --- Tiffy Assistant --- */
     #tiffyAssistant {
       position: fixed;
       bottom: 20px;
@@ -153,6 +160,7 @@
       100% { transform: scale(1); box-shadow: 0 0 15px #9055ff; }
     }
 
+    /* Custom message box for alerts */
     .message-box {
       position: fixed;
       top: 50%;
@@ -178,12 +186,14 @@
 </head>
 <body>
 
+  <!-- Wallet Setup Panel -->
   <div class="wallet-panel">
     <button id="connectWalletBtn">Connect Wallet</button>
     <button id="importTokenBtn">Show My TiffyAI Token</button>
     <button id="installMetaMaskBtn" style="display:none;">Activate or Install MetaMask</button>
     <div id="walletAddress"></div>
 
+    <!-- Token Info Section -->
     <div id="tokenInfo">
       <img src="https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png" alt="TIFFY Token" />
       <p class="balance">Balance: 0 TIFFY</p>
@@ -192,6 +202,7 @@
     </div>
   </div>
 
+  <!-- Tiffy Mascot -->
   <a id="tiffyAssistant" href="https://tiffyai.github.io/Dream-Menu/" target="_blank">
     <img src="https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png" alt="Tiffy Assistant" />
     <div id="tiffySpeech">
@@ -203,6 +214,7 @@
     </div>
   </a>
 
+  <!-- Custom message box for alerts -->
   <div id="messageBox" class="message-box">
     <p id="messageText"></p>
   </div>
@@ -227,20 +239,68 @@
       "function balanceOf(address owner) view returns (uint256)"
     ];
 
-    const PRICE_JSON_URL = "https://tiffyai.github.io/On-boarding-/price.json"; // ✅ your hosted logic
+    // Using your hosted JSON (same structure & property as your Claim page)
+    const PRICE_JSON_URL = "https://tiffyai.github.io/On-boarding-/price.json";
 
     function showMessage(text) {
       messageText.textContent = text;
       messageBox.classList.add('show');
-      setTimeout(() => messageBox.classList.remove('show'), 3000);
+      setTimeout(() => {
+        messageBox.classList.remove('show');
+      }, 3000);
     }
 
     async function ensureProviderAndAccount() {
-      if (!window.ethereum) throw new Error("MetaMask not installed");
+      if (!window.ethereum) {
+        throw new Error("MetaMask not installed");
+      }
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const accounts = await provider.send("eth_requestAccounts", []);
-      if (!accounts || accounts.length === 0) throw new Error("No account connected");
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No account connected");
+      }
+
+      // Ensure user is on BNB Smart Chain (chainId 56). If not, request switch / add.
+      try {
+        const network = await provider.getNetwork();
+        if (network.chainId !== 56) {
+          try {
+            await window.ethereum.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: "0x38" }]
+            });
+          } catch (switchError) {
+            // If chain is not added to wallet, add it (4902)
+            if (switchError && switchError.code === 4902) {
+              try {
+                await window.ethereum.request({
+                  method: "wallet_addEthereumChain",
+                  params: [{
+                    chainId: "0x38",
+                    chainName: "BNB Smart Chain",
+                    nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+                    rpcUrls: ["https://bsc-dataseed.binance.org/"],
+                    blockExplorerUrls: ["https://bscscan.com"]
+                  }]
+                });
+              } catch (addErr) {
+                // ignore - user can add manually
+              }
+            } else {
+              // user refused to switch
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not check/switch network:", err);
+      }
+
       return { provider, account: accounts[0] };
+    }
+
+    async function getProviderNetworkChainId(provider) {
+      const network = await provider.getNetwork();
+      return network.chainId;
     }
 
     async function connectWallet() {
@@ -248,6 +308,14 @@
         const { account } = await ensureProviderAndAccount();
         walletAddressDisplay.innerText =
           "Connected: " + account.slice(0, 6) + "..." + account.slice(-4);
+
+        // fetch token info immediately and refresh periodically
+        await updateTokenInfo().catch(()=>{});
+        // avoid duplicate intervals
+        if (window._tiffyPriceInterval) clearInterval(window._tiffyPriceInterval);
+        window._tiffyPriceInterval = setInterval(() => {
+          updateTokenInfo().catch(()=>{});
+        }, 60000);
       } catch (err) {
         showMessage("Failed to connect wallet: " + (err.message || err));
       }
@@ -256,8 +324,12 @@
     async function importTiffyToken() {
       try {
         const { provider, account } = await ensureProviderAndAccount();
-        const chainId = (await provider.getNetwork()).chainId;
-        if (chainId !== 56) { showMessage("Please switch to BNB Smart Chain first."); return; }
+        const chainId = await getProviderNetworkChainId(provider);
+
+        if (chainId !== 56) {
+          showMessage("Please switch to BNB Smart Chain first.");
+          return;
+        }
 
         const wasAdded = await window.ethereum.request({
           method: "wallet_watchAsset",
@@ -272,9 +344,15 @@
           }
         });
 
-        if (wasAdded) { showMessage("TiffyAI token added to your wallet!"); await updateTokenInfo(); }
-        else showMessage("TiffyAI token not added. Please accept in your wallet.");
-      } catch (err) { showMessage("Error adding token: " + (err.message || err)); }
+        if (wasAdded) {
+          showMessage("TiffyAI token added to your wallet!");
+          await updateTokenInfo();
+        } else {
+          showMessage("TiffyAI token not added. Please accept in your wallet.");
+        }
+      } catch (err) {
+        showMessage("Error adding token: " + (err.message || err));
+      }
     }
 
     async function updateTokenInfo() {
@@ -284,19 +362,31 @@
         const balance = await tokenContract.balanceOf(account);
         const formattedBalance = ethers.utils.formatUnits(balance, tiffyToken.decimals);
 
-        // --- YOUR CLAIM PAGE LOGIC ---
-        const res = await fetch(PRICE_JSON_URL, { cache: 'no-store' });
-        const data = await res.json();
-        const price = parseFloat(data.tiffyToUSD) || 0;
-        const usdValue = (parseFloat(formattedBalance) * price).toFixed(2);
+        // === YOUR CLAIM PAGE price.json logic (used as-is) ===
+        let price = 0;
+        try {
+          const res = await fetch(PRICE_JSON_URL, { cache: 'no-store' });
+          if (!res.ok) throw new Error('Price fetch HTTP ' + res.status);
+          const data = await res.json();
+          // your JSON uses 'tiffyToUSD' in the claim page
+          price = parseFloat(data.tiffyToUSD) || 0;
+        } catch (err) {
+          console.warn("Price fetch failed:", err);
+          // if price fetch fails, keep price as 0 (display will show $0.00)
+        }
+
+        const usdValue = (parseFloat(formattedBalance || 0) * price);
+        const usdText = isNaN(usdValue) ? "0.00" : usdValue.toFixed(2);
+        const priceText = isNaN(price) ? "0.00" : price.toFixed(6);
 
         tokenInfo.style.display = "block";
         tokenInfo.querySelector(".balance").textContent = `Balance: ${formattedBalance} ${tiffyToken.symbol}`;
-        tokenInfo.querySelector(".price").textContent = `Price: $${price}`;
-        tokenInfo.querySelector(".usd").textContent = `USD Value: $${usdValue}`;
+        tokenInfo.querySelector(".price").textContent = `Price: $${priceText}`;
+        tokenInfo.querySelector(".usd").textContent = `USD Value: $${usdText}`;
       } catch (err) {
+        console.error("Error updating token info:", err);
         tokenInfo.style.display = "none";
-        showMessage("Failed to load token info and price from price.json");
+        showMessage("Failed to load token info.");
       }
     }
 
@@ -310,11 +400,13 @@
     };
 
     window.addEventListener("load", () => {
-      if (window.ethereum) {
+      if (typeof window.ethereum !== "undefined") {
         connectBtn.style.display = "inline-block";
         importTokenBtn.style.display = "inline-block";
         installMetaMaskBtn.style.display = "none";
-      } else installMetaMaskBtn.style.display = "inline-block";
+      } else {
+        installMetaMaskBtn.style.display = "inline-block";
+      }
     });
 
     function tiffyReplyYes() {
@@ -324,7 +416,7 @@
     }
 
     function tiffyReplyNo() {
-      document.getElementById("tiffyText").innerText = "Alright! If you need help later, just click me.";
+      document.getElementById("tiffyText").innerText = "Alright! If you need me, just tap again.";
       document.getElementById("tiffyOptions").style.display = "none";
     }
   </script>
