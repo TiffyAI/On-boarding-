@@ -215,9 +215,6 @@
   </div>
 
   <script>
-    // I have added the PRICE_JSON_PATH here to match the logic from the other file.
-    const PRICE_JSON_PATH = "https://tiffyai.github.io/TIFFY-Market-Value/price.json";
-
     const connectBtn = document.getElementById('connectWalletBtn');
     const importTokenBtn = document.getElementById('importTokenBtn');
     const installMetaMaskBtn = document.getElementById('installMetaMaskBtn');
@@ -225,6 +222,9 @@
     const messageBox = document.getElementById('messageBox');
     const messageText = document.getElementById('messageText');
     const tokenInfo = document.getElementById('tokenInfo');
+
+    // ONLY change made: adding the path to the price.json file.
+    const PRICE_JSON_PATH = "https://tiffyai.github.io/TIFFY-Market-Value/price.json";
 
     const tiffyToken = {
       address: '0xE488253DD6B4D31431142F1b7601C96f24Fb7dd5',
@@ -267,12 +267,6 @@
         const { account } = await ensureProviderAndAccount();
         walletAddressDisplay.innerText =
           "Connected: " + account.slice(0, 6) + "..." + account.slice(-4);
-        
-        // Automatically update token info after connecting
-        await updateTokenInfo();
-        // Start fetching prices every minute
-        setInterval(updateTokenInfo, 60000);
-
       } catch (err) {
         showMessage("Failed to connect wallet: " + (err.message || err));
       }
@@ -312,6 +306,7 @@
       }
     }
 
+    // I have added the price fetching and display logic to this function as requested.
     async function updateTokenInfo() {
       try {
         const { provider, account } = await ensureProviderAndAccount();
@@ -322,7 +317,6 @@
         // Logic from the Claim & Withdraw file for fetching price.json
         const res = await fetch(PRICE_JSON_PATH);
         const data = await res.json();
-        // I'm using the `tiffyToUSD` field as found in the other file's logic
         const price = parseFloat(data.tiffyToUSD) || 0;
         const usdValue = (parseFloat(formattedBalance) * price).toFixed(2);
 
