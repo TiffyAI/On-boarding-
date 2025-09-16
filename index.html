@@ -1,364 +1,371 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TiffyAI Wallet Setup</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: url('Onboard.jpg') no-repeat center center fixed;
-      background-size: cover;
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TiffyAI Wallet Setup</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: url('Onboard.jpg') no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
 
-    .wallet-panel {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      padding: 25px;
-      border-radius: 15px;
-      border: 1px solid #4af0f8;
-      box-shadow: 0 0 15px #4af0f8;
-      text-align: center;
-      width: 100%;
-      max-width: 360px;
-    }
+    .wallet-panel {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 15px;
+      border: 1px solid #4af0f8;
+      box-shadow: 0 0 15px #4af0f8;
+      text-align: center;
+      width: 100%;
+      max-width: 360px;
+    }
 
-    .wallet-panel button {
-      padding: 12px 25px;
-      margin-bottom: 15px;
-      border: none;
-      border-radius: 12px;
-      font-weight: bold;
-      font-size: 16px;
-      cursor: pointer;
-      color: white;
-      display: block;
-      width: 100%;
-      max-width: 300px;
-      margin-left: auto;
-      margin-right: auto;
-      transition: transform 0.2s ease-in-out;
-    }
+    .wallet-panel button {
+      padding: 12px 25px;
+      margin-bottom: 15px;
+      border: none;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      color: white;
+      display: block;
+      width: 100%;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+      transition: transform 0.2s ease-in-out;
+    }
 
-    .wallet-panel button:active {
-      transform: scale(0.95);
-    }
+    .wallet-panel button:active {
+      transform: scale(0.95);
+    }
 
-    #connectWalletBtn {
-      background: linear-gradient(90deg, #9055ff, #4af0f8);
-    }
+    #connectWalletBtn {
+      background: linear-gradient(90deg, #9055ff, #4af0f8);
+    }
 
-    #importTokenBtn {
-      background: linear-gradient(90deg, #00ffc3, #9055ff);
-    }
+    #importTokenBtn {
+      background: linear-gradient(90deg, #00ffc3, #9055ff);
+    }
 
-    #installMetaMaskBtn {
-      background: linear-gradient(90deg, #ff4aa2, #9055ff);
-    }
+    #installMetaMaskBtn {
+      background: linear-gradient(90deg, #ff4aa2, #9055ff);
+    }
 
-    #walletAddress {
-      margin-top: 10px;
-      color: #4af0f8;
-      font-family: monospace;
-      word-break: break-all;
-    }
+    #walletAddress {
+      margin-top: 10px;
+      color: #4af0f8;
+      font-family: monospace;
+      word-break: break-all;
+    }
 
-    /* --- Token info box --- */
-    #tokenInfo {
-      margin-top: 20px;
-      color: #fff;
-      text-align: center;
-    }
+    /* --- Token info box --- */
+    #tokenInfo {
+      margin-top: 20px;
+      color: #fff;
+      text-align: center;
+    }
 
-    #tokenInfo img {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      margin-bottom: 8px;
-      box-shadow: 0 0 10px #4af0f8;
-    }
+    #tokenInfo img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-bottom: 8px;
+      box-shadow: 0 0 10px #4af0f8;
+    }
 
-    #tokenInfo p {
-      margin: 5px 0;
-      font-size: 14px;
-    }
+    #tokenInfo p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
 
-    #tokenInfo .balance {
-      font-size: 1.1em;
-      color: #00ffc3;
-      font-weight: bold;
-    }
+    #tokenInfo .balance {
+      font-size: 1.1em;
+      color: #00ffc3;
+      font-weight: bold;
+    }
 
-    #tokenInfo .price {
-      font-size: 1em;
-      color: #ffcc00;
-      font-weight: bold;
-    }
+    #tokenInfo .usd {
+      font-size: 1em;
+      color: #ffcc00;
+      font-weight: bold;
+    }
 
-    #tokenInfo .usd {
-      font-size: 1em;
-      color: #ffcc00;
-      font-weight: bold;
-    }
+    /* --- Tiffy Assistant --- */
+    #tiffyAssistant {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 120px;
+      z-index: 999;
+      animation: pulse 2.5s infinite;
+      cursor: pointer;
+      text-decoration: none;
+    }
 
-    /* --- Tiffy Assistant --- */
-    #tiffyAssistant {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 120px;
-      z-index: 999;
-      animation: pulse 2.5s infinite;
-      cursor: pointer;
-      text-decoration: none;
-    }
+    #tiffyAssistant img {
+      width: 100%;
+      border-radius: 50%;
+      box-shadow: 0 0 20px #4af0f8;
+    }
 
-    #tiffyAssistant img {
-      width: 100%;
-      border-radius: 50%;
-      box-shadow: 0 0 20px #4af0f8;
-    }
+    #tiffySpeech {
+      position: absolute;
+      bottom: 140px;
+      right: 10px;
+      background: rgba(12, 12, 12, 0.95);
+      border: 1px solid #4af0f8;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      max-width: 240px;
+      display: none;
+      box-shadow: 0 0 10px #9055ff;
+    }
 
-    #tiffySpeech {
-      position: absolute;
-      bottom: 140px;
-      right: 10px;
-      background: rgba(12, 12, 12, 0.95);
-      border: 1px solid #4af0f8;
-      color: #fff;
-      padding: 12px 18px;
-      border-radius: 12px;
-      font-size: 14px;
-      max-width: 240px;
-      display: none;
-      box-shadow: 0 0 10px #9055ff;
-    }
+    #tiffySpeech button {
+      margin: 8px 4px 0;
+      padding: 6px 14px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #9055ff, #4af0f8);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+    }
 
-    #tiffySpeech button {
-      margin: 8px 4px 0;
-      padding: 6px 14px;
-      border: none;
-      border-radius: 8px;
-      background: linear-gradient(90deg, #9055ff, #4af0f8);
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 13px;
-    }
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 15px #9055ff; }
+      50% { transform: scale(1.05); box-shadow: 0 0 25px #4af0f8; }
+      100% { transform: scale(1); box-shadow: 0 0 15px #9055ff; }
+    }
 
-    @keyframes pulse {
-      0% { transform: scale(1); box-shadow: 0 0 15px #9055ff; }
-      50% { transform: scale(1.05); box-shadow: 0 0 25px #4af0f8; }
-      100% { transform: scale(1); box-shadow: 0 0 15px #9055ff; }
-    }
+    /* Custom message box for alerts */
+    .message-box {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.85);
+      padding: 1.5rem;
+      border-radius: 1rem;
+      text-align: center;
+      z-index: 1000;
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+      color: #fff;
+    }
 
-    /* Custom message box for alerts */
-    .message-box {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background-color: rgba(0, 0, 0, 0.85);
-      padding: 1.5rem;
-      border-radius: 1rem;
-      text-align: center;
-      z-index: 1000;
-      backdrop-filter: blur(8px);
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-      color: #fff;
-    }
-
-    .message-box.show {
-      opacity: 1;
-      visibility: visible;
-    }
-  </style>
+    .message-box.show {
+      opacity: 1;
+      visibility: visible;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="wallet-panel">
-    <button id="connectWalletBtn">Connect Wallet</button>
-    <button id="importTokenBtn">Show My TiffyAI Token</button>
-    <button id="installMetaMaskBtn" style="display:none;">Activate or Install MetaMask</button>
-    <div id="walletAddress"></div>
+  <!-- Wallet Setup Panel -->
+  <div class="wallet-panel">
+    <button id="connectWalletBtn">Connect Wallet</button>
+    <button id="importTokenBtn">Show My TiffyAI Token</button>
+    <button id="installMetaMaskBtn" style="display:none;">Activate or Install MetaMask</button>
+    <div id="walletAddress"></div>
 
-        <div id="tokenInfo" style="display:none;">
-      <img src="https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png" alt="TIFFY Token" />
-      <p class="balance">Balance: 0 TIFFY</p>
-      <p class="price">Price: $0</p>
-      <p class="usd">USD Value: $0</p>
-    </div>
-  </div>
+    <!-- Token Info Section -->
+    <div id="tokenInfo" style="display:none;">
+      <img src="https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png" alt="TIFFY Token" />
+      <p class="balance">Balance: 0 TIFFY</p>
+      <p class="price">Price: $0</p>
+      <p class="usd">USD Value: $0</p>
+    </div>
+  </div>
 
-    <a id="tiffyAssistant" href="https://tiffyai.github.io/Dream-Menu/" target="_blank">
-    <img src="https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png" alt="Tiffy Assistant" />
-    <div id="tiffySpeech">
-      <p id="tiffyText">Hey, need help setting up your wallet?</p>
-      <div id="tiffyOptions">
-        <button onclick="tiffyReplyYes()">Yes, help me</button>
-        <button onclick="tiffyReplyNo()">No, I’m good</button>
-      </div>
-    </div>
-  </a>
+  <!-- Tiffy Mascot -->
+  <a id="tiffyAssistant" href="https://tiffyai.github.io/Dream-Menu/" target="_blank">
+    <img src="https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png" alt="Tiffy Assistant" />
+    <div id="tiffySpeech">
+      <p id="tiffyText">Hey, need help setting up your wallet?</p>
+      <div id="tiffyOptions">
+        <button onclick="tiffyReplyYes()">Yes, help me</button>
+        <button onclick="tiffyReplyNo()">No, I’m good</button>
+      </div>
+    </div>
+  </a>
 
-    <div id="messageBox" class="message-box">
-    <p id="messageText"></p>
-  </div>
+  <!-- Custom message box for alerts -->
+  <div id="messageBox" class="message-box">
+    <p id="messageText"></p>
+  </div>
 
-  <script>
-    const connectBtn = document.getElementById('connectWalletBtn');
-    const importTokenBtn = document.getElementById('importTokenBtn');
-    const installMetaMaskBtn = document.getElementById('installMetaMaskBtn');
-    const walletAddressDisplay = document.getElementById('walletAddress');
-    const messageBox = document.getElementById('messageBox');
-    const messageText = document.getElementById('messageText');
-    const tokenInfo = document.getElementById('tokenInfo');
+  <script>
+    const connectBtn = document.getElementById('connectWalletBtn');
+    const importTokenBtn = document.getElementById('importTokenBtn');
+    const installMetaMaskBtn = document.getElementById('installMetaMaskBtn');
+    const walletAddressDisplay = document.getElementById('walletAddress');
+    const messageBox = document.getElementById('messageBox');
+    const messageText = document.getElementById('messageText');
+    const tokenInfo = document.getElementById('tokenInfo');
 
-    // ONLY change made: adding the path to the price.json file.
-    const PRICE_JSON_PATH = "https://tiffyai.github.io/TIFFY-Market-Value/price.json";
+    const tiffyToken = {
+      address: '0xE488253DD6B4D31431142F1b7601C96f24Fb7dd5',
+      symbol: 'TIFFY',
+      decimals: 18,
+      image: 'https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png'
+    };
 
-    const tiffyToken = {
-      address: '0xE488253DD6B4D31431142F1b7601C96f24Fb7dd5',
-      symbol: 'TIFFY',
-      decimals: 18,
-      image: 'https://tiffyai.github.io/On-boarding-/TiffyAI-Token.png'
-    };
+    const tiffyTokenABI = [
+      "function balanceOf(address owner) view returns (uint256)"
+    ];
 
-    const tiffyTokenABI = [
-      "function balanceOf(address owner) view returns (uint256)"
-    ];
+    function showMessage(text) {
+      messageText.textContent = text;
+      messageBox.classList.add('show');
+      setTimeout(() => {
+        messageBox.classList.remove('show');
+      }, 3000);
+    }
 
-    function showMessage(text) {
-      messageText.textContent = text;
-      messageBox.classList.add('show');
-      setTimeout(() => {
-        messageBox.classList.remove('show');
-      }, 3000);
-    }
+    async function ensureProviderAndAccount() {
+      if (!window.ethereum) throw new Error("MetaMask not installed");
 
-    async function ensureProviderAndAccount() {
-      if (!window.ethereum) {
-        throw new Error("MetaMask not installed");
-      }
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No account connected");
-      }
-      return { provider, account: accounts[0] };
-    }
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      if (!accounts || accounts.length === 0) throw new Error("No account connected");
 
-    async function getProviderNetworkChainId(provider) {
-      const network = await provider.getNetwork();
-      return network.chainId;
-    }
+      // Ensure BNB Smart Chain
+      const { chainId } = await provider.getNetwork();
+      if (chainId !== 56) {
+        try {
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0x38" }]
+          });
+        } catch (switchError) {
+          if (switchError.code === 4902) {
+            await window.ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [{
+                chainId: "0x38",
+                chainName: "BNB Smart Chain",
+                nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+                rpcUrls: ["https://bsc-dataseed.binance.org/"],
+                blockExplorerUrls: ["https://bscscan.com"]
+              }]
+            });
+          } else {
+            throw new Error("Please switch to BNB Smart Chain.");
+          }
+        }
+      }
 
-    async function connectWallet() {
-      try {
-        const { account } = await ensureProviderAndAccount();
-        walletAddressDisplay.innerText =
-          "Connected: " + account.slice(0, 6) + "..." + account.slice(-4);
-      } catch (err) {
-        showMessage("Failed to connect wallet: " + (err.message || err));
-      }
-    }
+      return { provider, account: accounts[0] };
+    }
 
-    async function importTiffyToken() {
-      try {
-        const { provider, account } = await ensureProviderAndAccount();
-        const chainId = await getProviderNetworkChainId(provider);
+    async function connectWallet() {
+      try {
+        const { account } = await ensureProviderAndAccount();
+        walletAddressDisplay.innerText =
+          "Connected: " + account.slice(0, 6) + "..." + account.slice(-4);
+      } catch (err) {
+        showMessage("Failed to connect wallet: " + (err.message || err));
+      }
+    }
 
-        if (chainId !== 56) {
-          showMessage("Please switch to BNB Smart Chain first.");
-          return;
-        }
+    async function importTiffyToken() {
+      try {
+        const { account } = await ensureProviderAndAccount();
 
-        const wasAdded = await window.ethereum.request({
-          method: "wallet_watchAsset",
-          params: {
-            type: "ERC20",
-            options: {
-              address: tiffyToken.address,
-              symbol: tiffyToken.symbol,
-              decimals: tiffyToken.decimals,
-              image: tiffyToken.image
-            }
-          }
-        });
+        const wasAdded = await window.ethereum.request({
+          method: "wallet_watchAsset",
+          params: {
+            type: "ERC20",
+            options: {
+              address: tiffyToken.address,
+              symbol: tiffyToken.symbol,
+              decimals: tiffyToken.decimals,
+              image: tiffyToken.image
+            }
+          }
+        });
 
-        if (wasAdded) {
-          showMessage("TiffyAI token added to your wallet!");
-          await updateTokenInfo();
-        } else {
-          showMessage("TiffyAI token not added. Please accept in your wallet.");
-        }
-      } catch (err) {
-        showMessage("Error adding token: " + (err.message || err));
-      }
-    }
+        if (wasAdded) {
+          showMessage("TiffyAI token added to your wallet!");
+          await updateTokenInfo();
+        } else {
+          showMessage("TiffyAI token not added. Please accept in your wallet.");
+        }
+      } catch (err) {
+        showMessage("Error adding token: " + (err.message || err));
+      }
+    }
 
-    // I have added the price fetching and display logic to this function as requested.
-    async function updateTokenInfo() {
-      try {
-        const { provider, account } = await ensureProviderAndAccount();
-        const tokenContract = new ethers.Contract(tiffyToken.address, tiffyTokenABI, provider);
-        const balance = await tokenContract.balanceOf(account);
-        const formattedBalance = ethers.utils.formatUnits(balance, tiffyToken.decimals);
+    async function updateTokenInfo() {
+      try {
+        const { provider, account } = await ensureProviderAndAccount();
+        const tokenContract = new ethers.Contract(tiffyToken.address, tiffyTokenABI, provider);
+        const balance = await tokenContract.balanceOf(account);
+        const formattedBalance = ethers.utils.formatUnits(balance, tiffyToken.decimals);
 
-        // Logic from the Claim & Withdraw file for fetching price.json
-        const res = await fetch(PRICE_JSON_PATH);
-        const data = await res.json();
-        const price = parseFloat(data.tiffyToUSD) || 0;
-        const usdValue = (parseFloat(formattedBalance) * price).toFixed(2);
+        // ✅ Correct relative fetch
+        const res = await fetch("./price.json");
+        const data = await res.json();
+        const price = parseFloat(data.price) || 0;
+        const usdValue = (parseFloat(formattedBalance) * price).toFixed(2);
 
-        tokenInfo.style.display = "block";
-        tokenInfo.querySelector(".balance").textContent = `Balance: ${formattedBalance} ${tiffyToken.symbol}`;
-        tokenInfo.querySelector(".price").textContent = `Price: $${price.toFixed(2)}`;
-        tokenInfo.querySelector(".usd").textContent = `USD Value: $${usdValue}`;
-      } catch (err) {
-        console.error("Error updating token info:", err);
-        showMessage("Failed to load token info.");
-      }
-    }
+        tokenInfo.style.display = "block";
+        tokenInfo.querySelector(".balance").textContent = `Balance: ${formattedBalance} ${tiffyToken.symbol}`;
+        tokenInfo.querySelector(".price").textContent = `Price: $${price}`;
+        tokenInfo.querySelector(".usd").textContent = `USD Value: $${usdValue}`;
+      } catch (err) {
+        console.error("Error updating token info:", err);
+        showMessage("Failed to load token info.");
+      }
+    }
 
-    connectBtn.onclick = connectWallet;
-    importTokenBtn.onclick = importTiffyToken;
-    installMetaMaskBtn.onclick = () => {
-      const link = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-        ? 'https://metamask.app.link/dapp/tiffyai.github.io/On-boarding-/'
-        : 'https://metamask.io/download/';
-      window.open(link, "_blank");
-    };
+    connectBtn.onclick = connectWallet;
+    importTokenBtn.onclick = importTiffyToken;
+    installMetaMaskBtn.onclick = () => {
+      const link = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+        ? 'https://metamask.app.link/dapp/tiffyai.github.io/On-boarding-/'
+        : 'https://metamask.io/download/';
+      window.open(link, "_blank");
+    };
 
-    window.addEventListener("load", () => {
-      if (typeof window.ethereum !== "undefined") {
-        connectBtn.style.display = "inline-block";
-        importTokenBtn.style.display = "inline-block";
-        installMetaMaskBtn.style.display = "none";
-      } else {
-        installMetaMaskBtn.style.display = "inline-block";
-      }
-    });
+    window.addEventListener("load", () => {
+      if (typeof window.ethereum !== "undefined") {
+        connectBtn.style.display = "inline-block";
+        importTokenBtn.style.display = "inline-block";
+        installMetaMaskBtn.style.display = "none";
+      } else {
+        installMetaMaskBtn.style.display = "inline-block";
+      }
+    });
 
-    function tiffyReplyYes() {
-      document.getElementById("tiffyText").innerText = "Awesome! First, tap 'Connect Wallet' above.";
-      document.getElementById("tiffyOptions").style.display = "none";
-      document.querySelector(".wallet-panel").scrollIntoView({ behavior: "smooth" });
-    }
+    function tiffyReplyYes() {
+      document.getElementById("tiffyText").innerText = "Awesome! First, tap 'Connect Wallet' above.";
+      document.getElementById("tiffyOptions").style.display = "none";
+      document.querySelector(".wallet-panel").scrollIntoView({ behavior: "smooth" });
+    }
 
-    function tiffyReplyNo() {
-      document.getElementById("tiffyText").innerText = "Alright! If you need me, just tap again.";
-      document.getElementById("tiffyOptions").style.display = "none";
-    }
-  </script>
+    function tiffyReplyNo() {
+      document.getElementById("tiffyText").innerText = "Alright! If you need me, just tap again.";
+      document.getElementById("tiffyOptions").style.display = "none";
+    }
+  </script>
 </body>
 </html>
