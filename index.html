@@ -96,6 +96,12 @@
       font-weight: bold;
     }
 
+    #tokenInfo .price {
+      font-size: 1em;
+      color: #ffcc00;
+      font-weight: bold;
+    }
+
     #tokenInfo .usd {
       font-size: 1em;
       color: #ffcc00;
@@ -232,6 +238,8 @@
       "function balanceOf(address owner) view returns (uint256)"
     ];
 
+    const PRICE_JSON_URL = "https://tiffyai.github.io/On-boarding-/price.json";
+
     function showMessage(text) {
       messageText.textContent = text;
       messageBox.classList.add('show');
@@ -241,39 +249,20 @@
     }
 
     async function ensureProviderAndAccount() {
-      if (!window.ethereum) throw new Error("MetaMask not installed");
-
+      if (!window.ethereum) {
+        throw new Error("MetaMask not installed");
+      }
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const accounts = await provider.send("eth_requestAccounts", []);
-      if (!accounts || accounts.length === 0) throw new Error("No account connected");
-
-      // Ensure BNB Smart Chain
-      const { chainId } = await provider.getNetwork();
-      if (chainId !== 56) {
-        try {
-          await window.ethereum.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: "0x38" }]
-          });
-        } catch (switchError) {
-          if (switchError.code === 4902) {
-            await window.ethereum.request({
-              method: "wallet_addEthereumChain",
-              params: [{
-                chainId: "0x38",
-                chainName: "BNB Smart Chain",
-                nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-                rpcUrls: ["https://bsc-dataseed.binance.org/"],
-                blockExplorerUrls: ["https://bscscan.com"]
-              }]
-            });
-          } else {
-            throw new Error("Please switch to BNB Smart Chain.");
-          }
-        }
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No account connected");
       }
-
       return { provider, account: accounts[0] };
+    }
+
+    async function getProviderNetworkChainId(provider) {
+      const network = await provider.getNetwork();
+      return network.chainId;
     }
 
     async function connectWallet() {
@@ -288,7 +277,13 @@
 
     async function importTiffyToken() {
       try {
-        const { account } = await ensureProviderAndAccount();
+        const { provider, account } = await ensureProviderAndAccount();
+        const chainId = await getProviderNetworkChainId(provider);
+
+        if (chainId !== 56) {
+          showMessage("Please switch to BNB Smart Chain first.");
+          return;
+        }
 
         const wasAdded = await window.ethereum.request({
           method: "wallet_watchAsset",
@@ -321,10 +316,10 @@
         const balance = await tokenContract.balanceOf(account);
         const formattedBalance = ethers.utils.formatUnits(balance, tiffyToken.decimals);
 
-        // ✅ Correct relative fetch
-        const res = await fetch("./price.json");
+        // ✅ Fetch live price from your hosted JSON
+        const res = await fetch(PRICE_JSON_URL, {cache:'no-store'});
         const data = await res.json();
-        const price = parseFloat(data.price) || 0;
+        const price = parseFloat(data.tiffyToUSD) || 0;
         const usdValue = (parseFloat(formattedBalance) * price).toFixed(2);
 
         tokenInfo.style.display = "block";
@@ -332,40 +327,14 @@
         tokenInfo.querySelector(".price").textContent = `Price: $${price}`;
         tokenInfo.querySelector(".usd").textContent = `USD Value: $${usdValue}`;
       } catch (err) {
-        console.error("Error updating token info:", err);
-        showMessage("Failed to load token info.");
+        tokenInfo.style.display = "none";
+        showMessage("Failed to load token info and price from price.json");
       }
     }
 
-    connectBtn.onclick = connectWallet;
-    importTokenBtn.onclick = importTiffyToken;
-    installMetaMaskBtn.onclick = () => {
-      const link = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-        ? 'https://metamask.app.link/dapp/tiffyai.github.io/On-boarding-/'
-        : 'https://metamask.io/download/';
-      window.open(link, "_blank");
-    };
+    connectBtn.addEventListener("click", connectWallet);
+    importTokenBtn.addEventListener("click", importTiffyToken);
 
-    window.addEventListener("load", () => {
-      if (typeof window.ethereum !== "undefined") {
-        connectBtn.style.display = "inline-block";
-        importTokenBtn.style.display = "inline-block";
-        installMetaMaskBtn.style.display = "none";
-      } else {
-        installMetaMaskBtn.style.display = "inline-block";
-      }
-    });
-
-    function tiffyReplyYes() {
-      document.getElementById("tiffyText").innerText = "Awesome! First, tap 'Connect Wallet' above.";
-      document.getElementById("tiffyOptions").style.display = "none";
-      document.querySelector(".wallet-panel").scrollIntoView({ behavior: "smooth" });
-    }
-
-    function tiffyReplyNo() {
-      document.getElementById("tiffyText").innerText = "Alright! If you need me, just tap again.";
-      document.getElementById("tiffyOptions").style.display = "none";
-    }
   </script>
 </body>
 </html>
